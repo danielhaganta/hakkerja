@@ -1,51 +1,12 @@
-from collections.abc import Iterator
 from datetime import date
-from pathlib import Path
 
 import pytest
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import URL, Engine, create_engine, insert, inspect, select, text
-from sqlalchemy.engine import make_url
+from sqlalchemy import Engine, insert, inspect, select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.config import get_settings
 from app.db.models import EMBEDDING_DIMENSIONS, Chunk, Provision, Regulation
-
-ALEMBIC_DIR = Path(__file__).resolve().parents[2] / "alembic"
-# Downgrading to base wipes every table, so these tests never touch the dev database.
-THROWAWAY_DATABASE = "hakkerja_migrations_test"
-
-
-@pytest.fixture
-def database_url() -> Iterator[URL]:
-    dev_url = make_url(str(get_settings().database_url))
-    admin = create_engine(dev_url, isolation_level="AUTOCOMMIT")
-    with admin.connect() as connection:
-        connection.execute(text(f"DROP DATABASE IF EXISTS {THROWAWAY_DATABASE}"))
-        connection.execute(text(f"CREATE DATABASE {THROWAWAY_DATABASE}"))
-
-    yield dev_url.set(database=THROWAWAY_DATABASE)
-
-    with admin.connect() as connection:
-        connection.execute(text(f"DROP DATABASE {THROWAWAY_DATABASE} WITH (FORCE)"))
-    admin.dispose()
-
-
-@pytest.fixture
-def engine(database_url: URL) -> Iterator[Engine]:
-    engine = create_engine(database_url)
-    yield engine
-    engine.dispose()
-
-
-# Built without alembic.ini so env.py leaves pytest's logging configuration alone.
-@pytest.fixture
-def alembic_config(database_url: URL) -> Config:
-    config = Config()
-    config.set_main_option("script_location", str(ALEMBIC_DIR))
-    config.attributes["database_url"] = database_url
-    return config
 
 
 def is_vector_installed(engine: Engine) -> bool:
@@ -57,7 +18,9 @@ def is_vector_installed(engine: Engine) -> bool:
         )
 
 
-def insert_regulation(engine: Engine, code: str, number: str, year: int) -> int:
+def insert_regulation(
+    engine: Engine, code: str, number: str, year: int, text_quality: str = "native"
+) -> int:
     statement = (
         insert(Regulation)
         .values(
@@ -67,6 +30,7 @@ def insert_regulation(engine: Engine, code: str, number: str, year: int) -> int:
             year=year,
             title=f"Undang-Undang {number}/{year}",
             source_url=f"https://example.test/{code}.pdf",
+            text_quality=text_quality,
         )
         .returning(Regulation.id)
     )
@@ -131,7 +95,37 @@ def test_amended_article_keeps_original_regulation(alembic_config: Config, engin
     )
 
     with pytest.raises(IntegrityError, match="uq_provisions_in_force_article"):
-        insert_provision(engine, uu_13_2003, valid_from=date(2024, 1, 1))
+        insert_provision(
+            engine,
+            uu_13_2003,
+            amended_by_id=uu_6_2023,
+            amendment_ref="Pasal 81 angka 48",
+            valid_from=date(2024, 1, 1),
+        )
+
+
+def test_text_quality_rejects_unknown_value(alembic_config: Config, engine: Engine) -> None:
+    command.upgrade(alembic_config, "head")
+
+    with pytest.raises(IntegrityError, match="ck_regulations_text_quality"):
+        insert_regulation(engine, "UU-13-2003", "13", 2003, text_quality="scan")
+
+
+def test_original_version_is_unique_although_amendment_columns_are_null(
+    alembic_config: Config, engine: Engine
+) -> None:
+    command.upgrade(alembic_config, "head")
+    regulation_id = insert_regulation(engine, "UU-13-2003", "13", 2003)
+    insert_provision(
+        engine,
+        regulation_id,
+        status="diubah",
+        valid_from=date(2003, 3, 25),
+        valid_to=date(2023, 3, 31),
+    )
+
+    with pytest.raises(IntegrityError, match="uq_provisions_version"):
+        insert_provision(engine, regulation_id, valid_from=date(2003, 3, 25))
 
 
 def test_chunk_tsv_is_generated_with_indonesian_stemming(

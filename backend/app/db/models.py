@@ -51,6 +51,12 @@ class RegulationStatus(StrEnum):
     DICABUT = "dicabut"
 
 
+class TextQuality(StrEnum):
+    NATIVE = "native"
+    OCR = "ocr"
+    MANUAL = "manual"
+
+
 class ProvisionStatus(StrEnum):
     BERLAKU = "berlaku"
     DIUBAH = "diubah"
@@ -81,6 +87,7 @@ class Regulation(Base):
     __table_args__ = (
         check_one_of("type", RegulationType),
         check_one_of("status", RegulationStatus),
+        check_one_of("text_quality", TextQuality),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -95,6 +102,8 @@ class Regulation(Base):
     revoked_by_id: Mapped[int | None] = mapped_column(ForeignKey("regulations.id"))
     source_url: Mapped[str]
     file_sha256: Mapped[str | None]
+    # No server default: a loader that forgets it must fail, not label a scan as native text.
+    text_quality: Mapped[str]
     retrieved_at: Mapped[datetime] = mapped_column(server_default=func.now())
 
 
@@ -110,6 +119,16 @@ class Provision(Base):
     __table_args__ = (
         check_one_of("status", ProvisionStatus),
         CheckConstraint("valid_to IS NULL OR valid_to > valid_from", name="valid_range"),
+        # Identity of one version, used as the loader's upsert key. NULLs must compare equal so
+        # an original article (no amending law) exists once; needs PostgreSQL 15+.
+        UniqueConstraint(
+            "regulation_id",
+            "article",
+            "amended_by_id",
+            "amendment_ref",
+            name="uq_provisions_version",
+            postgresql_nulls_not_distinct=True,
+        ),
         Index(
             "uq_provisions_in_force_article",
             "regulation_id",
@@ -124,7 +143,9 @@ class Provision(Base):
     article: Mapped[str]
     label: Mapped[str]
     chapter: Mapped[str | None]
+    section: Mapped[str | None]
     text: Mapped[str]
+    penjelasan: Mapped[str | None]
     status: Mapped[str] = mapped_column(server_default=ProvisionStatus.BERLAKU)
     amended_by_id: Mapped[int | None] = mapped_column(ForeignKey("regulations.id"))
     amendment_ref: Mapped[str | None]
