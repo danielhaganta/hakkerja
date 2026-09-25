@@ -39,7 +39,8 @@ jobs:
       - uses: actions/checkout@v7
 
       # Python version comes from backend/.python-version.
-      - uses: astral-sh/setup-uv@v10
+      # setup-uv publishes only full version tags, no floating major tag.
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           working-directory: backend
           enable-cache: true
