@@ -22,6 +22,8 @@ dev = [
 ]
 ingestion = [
     "pypdfium2>=5.13.0",
+    "pyyaml>=6.0.3",
+    "types-pyyaml>=6.0.12.20260906",
 ]
 
 [tool.uv]
@@ -45,6 +47,11 @@ known-third-party = ["alembic"]
 python_version = "3.12"
 strict = true
 explicit_package_bases = true
+
+[[tool.mypy.overrides]]
+# pypdfium2 ships no type information; ingestion.parse_pdf.read_page_texts is its only caller.
+module = ["pypdfium2", "pypdfium2.*"]
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

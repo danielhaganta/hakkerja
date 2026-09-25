@@ -23,6 +23,9 @@ next-env.d.ts
 # Source PDFs are large and re-downloadable; metadata lives in data/sources.yaml
 data/raw/
 
+# Output of ingestion.parse_pdf: cleaned page text, regenerated from data/raw
+data/interim/
+
 # Output of ingestion.embed: large derived data that lives in the database
 data/embeddings/
 

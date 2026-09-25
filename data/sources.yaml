@@ -1,0 +1,18 @@
+# Regulation metadata. ingestion.load copies these fields into the regulations table.
+# Dates must come from an official source, never from memory.
+# text_quality: native (born-digital PDF) | ocr (scanned, OCR text layer) | manual (typed in by hand)
+regulations:
+  - code: UU-13-2003
+    type: UU
+    number: "13"
+    year: 2003
+    title: Ketenagakerjaan
+    # Dates from JDIH BPK metadata; the PDF itself only prints the signing date.
+    enacted_date: 2003-03-25
+    # Pasal 193: in force on the date of promulgation.
+    effective_date: 2003-03-25
+    source_url: https://peraturan.bpk.go.id/Details/43013/uu-no-13-tahun-2003
+    file: UU-13-2003.pdf
+    sha256: 0d3868d19082be34c875a376729998b4d948cac745b1e613d90e6f257d5bf273
+    text_quality: native
+    expected_articles: 193
