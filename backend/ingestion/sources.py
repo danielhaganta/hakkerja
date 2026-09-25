@@ -1,9 +1,10 @@
 from datetime import date
-from enum import StrEnum
 from pathlib import Path
 
 import yaml
 from pydantic import BaseModel, ConfigDict
+
+from app.db.models import RegulationStatus, RegulationType, TextQuality
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = REPO_ROOT / "data"
@@ -13,23 +14,18 @@ PROCESSED_DIR = DATA_DIR / "processed"
 SOURCES_FILE = DATA_DIR / "sources.yaml"
 
 
-class TextQuality(StrEnum):
-    NATIVE = "native"
-    OCR = "ocr"
-    MANUAL = "manual"
-
-
 class Source(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     code: str
-    type: str
+    type: RegulationType
     number: str
     year: int
     title: str
     enacted_date: date | None
     effective_date: date | None
     source_url: str | None
+    status: RegulationStatus
     file: str
     sha256: str
     text_quality: TextQuality

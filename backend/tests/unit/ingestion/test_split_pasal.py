@@ -2,7 +2,8 @@ import logging
 
 import pytest
 
-from ingestion.sources import Source, TextQuality
+from app.db.models import RegulationStatus, RegulationType, TextQuality
+from ingestion.sources import Source
 from ingestion.split_pasal import (
     Article,
     ArticleCountMismatchError,
@@ -64,13 +65,14 @@ DOCUMENT = "\f".join([PAGE_1, PAGE_2, PAGE_3])
 def make_source(expected_articles: int = 3) -> Source:
     return Source(
         code="UU-1-2000",
-        type="UU",
+        type=RegulationType.UU,
         number="1",
         year=2000,
         title="Contoh",
         enacted_date=None,
         effective_date=None,
         source_url=None,
+        status=RegulationStatus.BERLAKU,
         file="UU-1-2000.pdf",
         sha256="0" * 64,
         text_quality=TextQuality.NATIVE,

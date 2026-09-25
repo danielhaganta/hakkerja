@@ -273,6 +273,16 @@ def write_jsonl(source: Source, articles: list[Article]) -> None:
     source.processed_path.write_text("\n".join(rows) + "\n", encoding="utf-8", newline="\n")
 
 
+def read_articles(source: Source) -> list[Article]:
+    articles = []
+    for line in source.processed_path.read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        row["ayat"] = tuple(Ayat(**item) for item in row["ayat"])
+        row["pages"] = tuple(row["pages"])
+        articles.append(Article(**row))
+    return articles
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--code", help="regulation code, e.g. UU-13-2003")

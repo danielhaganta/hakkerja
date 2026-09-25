@@ -1,0 +1,14 @@
+# Pasal checked by hand against the source PDF.
+# content_sha256 pins the exact text that was checked (sha256 of the provision text as loaded).
+# If the parsed text changes, ingestion.load stops marking it verified and logs a warning.
+#
+#   - regulation: UU-13-2003
+#     article: "156"
+#     content_sha256: <copied from provisions.content_sha256 after ingestion.load>
+provisions:
+  - regulation: UU-13-2003
+    article: "59"
+    content_sha256: 2c2e29a8ad623566d9c9ca3fcd466899cac1794d923c23df9113793257f1a204
+  - regulation: UU-13-2003
+    article: "156"
+    content_sha256: e1ec4606c85c208021bac0a18d85d025f369853d2aac88041d5ac4e645f2d3fb
