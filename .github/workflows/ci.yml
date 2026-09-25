@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      db:
+        # Same image as docker-compose.yml so CI exercises the pgvector build we develop against.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: hakkerja
+          POSTGRES_PASSWORD: hakkerja
+          POSTGRES_DB: hakkerja
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U hakkerja -d hakkerja"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      # Throwaway database that only lives for this job, so the credentials are not a secret.
+      DATABASE_URL: postgresql+psycopg://hakkerja:hakkerja@localhost:5432/hakkerja
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Python version comes from backend/.python-version.
+      - uses: astral-sh/setup-uv@v10
+        with:
+          working-directory: backend
+          enable-cache: true
+
+      - run: uv sync --locked
+
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run mypy app
+
+      - run: uv run alembic upgrade head
+      - run: uv run alembic check
+
+      - run: uv run pytest
