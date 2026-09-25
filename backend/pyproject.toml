@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "HakKerja API: RAG-based Q&A on Indonesian labor law"
 requires-python = ">=3.12"
 dependencies = [
+    "alembic>=1.20.0",
     "fastapi>=0.141.1",
+    "pgvector>=0.5.0",
     "psycopg[binary]>=3.3.6",
     "pydantic-settings>=2.15.0",
     "sqlalchemy[asyncio]>=2.1.0",
@@ -28,6 +30,10 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "RUF", "ASYNC", "PTH", "C4", "RET"]
+
+[tool.ruff.lint.isort]
+# The local alembic/ migrations folder would otherwise be mistaken for first-party code.
+known-third-party = ["alembic"]
 
 [tool.mypy]
 python_version = "3.12"
