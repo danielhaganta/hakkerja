@@ -45,6 +45,7 @@ jobs:
           working-directory: backend
           enable-cache: true
 
+      # Installs default-groups from pyproject.toml (dev + ingestion).
       - run: uv sync --locked
 
       - run: uv run ruff check .

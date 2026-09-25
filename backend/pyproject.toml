@@ -20,9 +20,15 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.9",
 ]
+ingestion = [
+    "pypdfium2>=5.13.0",
+]
 
 [tool.uv]
 package = false
+# Ingestion runs offline but its parser tests run in CI, so every dev/CI sync needs it.
+# The production image must opt out with `uv sync --no-default-groups`.
+default-groups = ["dev", "ingestion"]
 
 [tool.ruff]
 target-version = "py312"
